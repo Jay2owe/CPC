@@ -29,8 +29,8 @@ src/main/resources/
 ```bash
 export JAVA_HOME="/c/Program Files/Java/jdk-25.0.2"
 bash mvnw clean package -Denforcer.skip=true
-cp target/CPC-1.0.0.jar "/c/Users/jamie/UK Dementia Research Institute Dropbox/Brancaccio Lab/Jamie/Fiji.app/plugins/"
-cp target/CPC-1.0.0.jar "/c/Users/jamie/UK Dementia Research Institute Dropbox/Brancaccio Lab/LabAdmin/Software/ImageJ/Plugins/Jamie's Centre-Particle Coincidence (CPC) Plugin/"
+cp target/CPC-1.1.0.jar "/c/Users/jamie/UK Dementia Research Institute Dropbox/Brancaccio Lab/Jamie/Fiji.app/plugins/"
+cp target/CPC-1.1.0.jar "/c/Users/jamie/UK Dementia Research Institute Dropbox/Brancaccio Lab/LabAdmin/Software/ImageJ/Plugins/Jamie's Centre-Particle Coincidence (CPC) Plugin/"
 "/c/Users/jamie/UK Dementia Research Institute Dropbox/Brancaccio Lab/Jamie/Fiji.app/ImageJ-win64.exe" &
 ```
 - **After every successful build, always deploy the jar to both locations and launch Fiji.**

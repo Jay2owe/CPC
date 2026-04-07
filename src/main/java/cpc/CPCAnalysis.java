@@ -235,7 +235,7 @@ public class CPCAnalysis {
     }
 
     /** Deep copy object list so each pairwise test gets its own partnerLabel state. */
-    private List<ObjectInfo> copyObjects(List<ObjectInfo> originals) {
+    public List<ObjectInfo> copyObjects(List<ObjectInfo> originals) {
         List<ObjectInfo> copy = new ArrayList<ObjectInfo>(originals.size());
         for (ObjectInfo o : originals) {
             ObjectInfo c = new ObjectInfo(o.label);
@@ -253,7 +253,7 @@ public class CPCAnalysis {
      * Each unique non-zero pixel value is treated as a separate object.
      * Uses geometric centroid (unweighted).
      */
-    List<ObjectInfo> extractObjects(ImagePlus img) {
+    public List<ObjectInfo> extractObjects(ImagePlus img) {
         return extractObjects(img, null);
     }
 
@@ -262,7 +262,7 @@ public class CPCAnalysis {
      * If rawImg is provided, computes intensity-weighted centroids (center of mass)
      * using pixel intensities from rawImg as weights. Otherwise geometric centroid.
      */
-    List<ObjectInfo> extractObjects(ImagePlus img, ImagePlus rawImg) {
+    public List<ObjectInfo> extractObjects(ImagePlus img, ImagePlus rawImg) {
         ImageStack stack = img.getStack();
         int w = img.getWidth();
         int h = img.getHeight();
@@ -359,7 +359,7 @@ public class CPCAnalysis {
      * For each object, look up the voxel value in the target label image
      * at the object's centroid position.
      */
-    void testCoincidence(List<ObjectInfo> objects, ImagePlus targetImage) {
+    public void testCoincidence(List<ObjectInfo> objects, ImagePlus targetImage) {
         ImageStack stack = targetImage.getStack();
         int w = targetImage.getWidth();
         int h = targetImage.getHeight();
