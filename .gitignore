@@ -8,6 +8,9 @@ target/
 .classpath
 .settings/
 
+# Temp files
+*.tmp.*
+
 # OS
 .DS_Store
 Thumbs.db
