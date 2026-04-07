@@ -58,6 +58,10 @@ Creates a `CPC/` subdirectory tree in the save directory, mirroring batch struct
 - Each subdirectory includes a `README.txt`
 - Batch does NOT save individual per-group CSVs; only batch-level aggregated files
 
+## Git & Versioning
+- **No Co-Authored-By lines** in commits — do not add Claude co-author tags
+- **Versioning**: `MAJOR.MINOR.PATCH` (no `-SNAPSHOT`). MAJOR = new major feature or architectural rework, MINOR = substantial change to existing feature, PATCH = bug fix or small tweak. Bump appropriately in `pom.xml` when making changes.
+
 ## Key Design Decisions
 - `package-name` property set explicitly in pom.xml to avoid module name derivation issues
 - ROI .zip loading reads entries manually via `RoiDecoder(byte[], String)` — no RoiManager dependency
