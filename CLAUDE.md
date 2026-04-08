@@ -29,8 +29,8 @@ src/main/resources/
 ```bash
 export JAVA_HOME="/c/Program Files/Java/jdk-25.0.2"
 bash mvnw clean package -Denforcer.skip=true
-cp target/CPC-1.1.0.jar "/c/Users/jamie/UK Dementia Research Institute Dropbox/Brancaccio Lab/Jamie/Fiji.app/plugins/"
-cp target/CPC-1.1.0.jar "/c/Users/jamie/UK Dementia Research Institute Dropbox/Brancaccio Lab/LabAdmin/Software/ImageJ/Plugins/Jamie's Centre-Particle Coincidence (CPC) Plugin/"
+cp target/CPC-1.2.0.jar "/c/Users/jamie/UK Dementia Research Institute Dropbox/Brancaccio Lab/Jamie/Fiji.app/plugins/"
+cp target/CPC-1.2.0.jar "/c/Users/jamie/UK Dementia Research Institute Dropbox/Brancaccio Lab/LabAdmin/Software/ImageJ/Plugins/Jamie's Centre-Particle Coincidence (CPC) Plugin/"
 "/c/Users/jamie/UK Dementia Research Institute Dropbox/Brancaccio Lab/Jamie/Fiji.app/ImageJ-win64.exe" &
 ```
 - **After every successful build, always deploy the jar to both locations and launch Fiji.**
@@ -61,6 +61,12 @@ Creates a `CPC/` subdirectory tree in the save directory, mirroring batch struct
 ## Git & Versioning
 - **No Co-Authored-By lines** in commits — do not add Claude co-author tags
 - **Versioning**: `MAJOR.MINOR.PATCH` (no `-SNAPSHOT`). MAJOR = new major feature or architectural rework, MINOR = substantial change to existing feature, PATCH = bug fix or small tweak. Bump appropriately in `pom.xml` when making changes.
+
+## Library API (for use by other plugins)
+- Published via JitPack: `com.github.Jay2owe:CPC:v1.2.0`
+- Core public methods: `extractObjects()`, `testCoincidence()`, `copyObjects()` — all static, no instance needed
+- `CPCAnalysis.ObjectInfo` — public inner class with public fields: `label`, `cx`, `cy`, `cz`, `voxelCount`, `partnerLabel`
+- Integration plan for IHF Pipeline: `docs/CPC_IHF_INTEGRATION_PLAN.md` (local only, gitignored)
 
 ## Key Design Decisions
 - `package-name` property set explicitly in pom.xml to avoid module name derivation issues

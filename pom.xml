@@ -14,7 +14,7 @@
 
 	<groupId>io.github.jay2owe</groupId>
 	<artifactId>CPC</artifactId>
-	<version>1.1.0</version>
+	<version>1.2.0</version>
 
 	<name>CPC</name>
 	<description>Centre-Particle Coincidence — object-based colocalization from any label image or ROI set</description>
