@@ -331,6 +331,64 @@ One set of `CPC Coloc/Partner/Contains` columns per partner channel. `Targets Hi
 
 ---
 
+## Critical Implementation Notes (from code review)
+
+### BLOCKER 1: Column Whitelist
+
+`ThreeDObjectAnalysis.java` has a `ResultsTableCleaner.keepOnlyColumns()` call (~line 613) with a hardcoded whitelist (`baseHeadings` array, ~line 582). A parallel whitelist exists at ~line 1376 in `writeTempTables()`. Any column NOT in the whitelist is silently stripped before CSV save.
+
+**Action**: Update BOTH `keep` lists to include:
+- `Label` — unconditionally
+- `CPC Coloc with {X}`, `CPC Partner {X}`, `CPC Contains {X}` — for each partner channel, when CPC enabled
+- `CPC Targets Hit`, `CPC Pattern` — when CPC enabled
+
+### BLOCKER 2: XM/YM/ZM Coordinate System
+
+CPC's `testCoincidence()` uses centroid coordinates as pixel indices. The mcib3d native path stores pixel coordinates (`MASS_CENTER_X_PIX` at ObjectsCounter3DWrapper line 385-387). BUT the legacy Counter3D path stores **calibrated** coordinates (microns) via `c_mass[0..2]` (ObjectsCounter3DWrapper lines 545-554).
+
+**Action**: Before calling `testCoincidence`, detect coordinate system:
+- If using native mcib3d path → XM/YM/ZM are already pixels, use directly
+- If using legacy Counter3D path → convert back to pixels: `px = calibrated / pixelWidth`
+- In Phase 5 (retroactive): check if calibration info is available; if XM values are much larger than image width in pixels, they're likely calibrated
+
+### WARNING: Label Image Path Construction (Phase 5)
+
+The label image filename suffix uses `roiLabel` (the `ROI` column in the CSV), NOT the `Region` column. The actual save code at ThreeDObjectAnalysis ~line 802 calls `saveObjectsImages` with `roiLabel`. The `buildFileSuffix` method (~line 1358) constructs: `{hemisphere}_{roiLabel}`.
+
+**Action**: In Phase 5c, construct paths using:
+```
+Image Analysis/{Animal Name}/{Channel}_objects_{Hemisphere}_{ROI}.tif
+```
+NOT `_{Region}`. If `ROI` column is empty, fall back to `Region`.
+
+### WARNING: Label Column Source
+
+The plan's Phase 3a says to add Label in `appendStatsToChannelTable`, but that method doesn't have access to the mcib3d population object. Instead, add the Label column in `ObjectsCounter3DWrapper.buildNativeStatisticsTable()` (~line 348):
+```java
+rt.setValue("Label", i, (int) obj.getLabel());
+```
+Then it flows through automatically when stats are copied to the channel table.
+
+### WARNING: CPC Pattern is a String Column
+
+`ResultsTable.setValue(String colName, int row, String value)` must be used for the `CPC Pattern` column, not the numeric `setValue`. The `writeColocValuesForThisImage` helper only handles floats. Need a separate write path for String columns, or write Pattern values directly in the multi-target method.
+
+### WARNING: Headless/CLI Mode
+
+ThreeDObjectAnalysis supports `suppressDialogs` mode (headless). The new `doVolumetric` and `doCpc` booleans need defaults (both `true`) for headless execution. Check if `CLIArgumentParser` in `IHFPipeline.java` needs corresponding CLI flags.
+
+### WARNING: Self-Lookup Fallback for Concave Objects
+
+In Phase 5c step 3b (legacy data without Label column), the self-lookup may fail for concave objects whose centroid falls outside their own boundary. Pixel at centroid = 0 (background) or wrong label.
+
+**Action**: If self-lookup returns 0, search a small 3x3x3 neighborhood around the centroid for the most common non-zero label. If still 0, log a warning and skip the object for containment.
+
+### WARNING: Memory Management in Phase 5
+
+Loading pairs of 3D label images for every section can be memory-heavy. Process one section fully before loading the next. Call `image.flush()` after `image.close()` since ImageJ retains pixel arrays until GC.
+
+---
+
 ## Testing Checklist
 
 - [ ] CPC static methods work (extractObjects, testCoincidence, copyObjects)
