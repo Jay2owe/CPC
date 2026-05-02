@@ -1,4 +1,4 @@
-package if_analysis.pipeline.objects;
+package flash.pipeline.objects;
 
 import ij.ImagePlus;
 import ij.ImageStack;

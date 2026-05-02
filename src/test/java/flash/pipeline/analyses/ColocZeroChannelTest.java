@@ -1,10 +1,10 @@
-package if_analysis.pipeline.analyses;
+package flash.pipeline.analyses;
 
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.measure.ResultsTable;
 import ij.process.ShortProcessor;
-import if_analysis.pipeline.bin.BinConfig;
+import flash.pipeline.bin.BinConfig;
 import org.junit.Test;
 
 import java.lang.reflect.Field;

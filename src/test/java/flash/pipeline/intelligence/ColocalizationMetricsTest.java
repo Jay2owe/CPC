@@ -1,4 +1,4 @@
-package if_analysis.pipeline.intelligence;
+package flash.pipeline.intelligence;
 
 import org.junit.Test;
 
