@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this plugin, please cite it as below."
+type: software
+title: "CPC — Centre-Particle Coincidence"
+abstract: >-
+  ImageJ/Fiji plugin for object-based colocalization that decouples
+  segmentation from coincidence detection by accepting any label
+  image or ROI set.
+authors:
+  - given-names: Jamie
+    family-names: Malcolm
+    orcid: "https://orcid.org/0009-0008-3862-2776"
+    affiliation: "UK Dementia Research Institute at Imperial College London"
+    email: jamiemalcolm12@gmail.com
+repository-code: "https://github.com/Jay2owe/CPC"
+url: "https://github.com/Jay2owe/CPC"
+license: BSD-3-Clause
+version: "1.4.0"
+date-released: "2026-05-17"
+keywords:
+  - imagej
+  - fiji
+  - colocalization
+  - microscopy
+  - image-analysis

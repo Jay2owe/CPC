@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+contact_links:
+  - name: ImageJ / Fiji general questions
+    url: https://forum.image.sc/tag/cpc
+    about: For usage questions and ImageJ ecosystem help, please ask
+      on the image.sc forum and tag your post `cpc`.

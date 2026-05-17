@@ -1,0 +1,20 @@
+{
+  "title": "CPC - Centre-Particle Coincidence",
+  "description": "ImageJ/Fiji plugin for object-based colocalization analysis from label images or ROI sets.",
+  "creators": [
+    {
+      "name": "Malcolm, Jamie",
+      "orcid": "0009-0008-3862-2776",
+      "affiliation": "UK Dementia Research Institute at Imperial College London"
+    }
+  ],
+  "license": "BSD-3-Clause",
+  "keywords": [
+    "ImageJ",
+    "Fiji",
+    "microscopy",
+    "colocalization",
+    "bioimage analysis"
+  ],
+  "upload_type": "software"
+}
