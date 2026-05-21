@@ -12,13 +12,17 @@ import cpc.ui.CPCDialog;
 import cpc.ui.ToggleSwitch;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.Macro;
 import ij.WindowManager;
 import ij.gui.Roi;
 import ij.plugin.PlugIn;
+import ij.plugin.frame.Recorder;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.GraphicsEnvironment;
 import java.awt.event.ItemEvent;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,6 +46,15 @@ public class CPC_ implements PlugIn {
 
     @Override
     public void run(String arg) {
+        String macroOptions = Macro.getOptions();
+        if (!hasText(macroOptions) && hasText(arg)) {
+            macroOptions = arg;
+        }
+        if (hasText(macroOptions) || GraphicsEnvironment.isHeadless()) {
+            runMacro(macroOptions);
+            return;
+        }
+
         String[] openTitles = getImageTitles();
         boolean hasOpen = openTitles.length > 0;
         String[] dropdownItems;
@@ -252,6 +265,13 @@ public class CPC_ implements PlugIn {
                     rawRef.set(null);
                 }
 
+                final CPCMacroOptions recordedOptions = CPCMacroOptions.fromDialogValues(
+                        mode, titles, files, refTitle, refFile, roiPaths,
+                        rawTitles, rawFiles, bidirectional, comWeighted,
+                        perObject, showSummary, extendedData, multiTarget,
+                        centroidMaps, autoSave, saveDirPath);
+                recordMacroCall(recordedOptions);
+
                 // ── Run analysis in background thread ──────────────────
                 new Thread(new Runnable() {
                     @Override
@@ -296,6 +316,181 @@ public class CPC_ implements PlugIn {
         batchBtn.addActionListener(e -> CPCBatch.showBatchDialog());
 
         d.showNonBlocking();
+    }
+
+    private void runMacro(String optionsText) {
+        if (!hasText(optionsText)) {
+            reportMacroError("CPC macro/headless execution requires explicit macro options.");
+            return;
+        }
+        try {
+            CPCMacroOptions options = CPCMacroOptionsParser.parse(optionsText);
+            MacroInput input = resolveMacroInput(options);
+            CPCResult result = CPC.run(options.toParameters(input.images, input.rawImages));
+            showAndSaveMacroResult(result, options, input.images);
+        } catch (Exception ex) {
+            reportMacroError(ex.getMessage());
+        }
+    }
+
+    private MacroInput resolveMacroInput(CPCMacroOptions options) throws Exception {
+        List<ImagePlus> images = new ArrayList<ImagePlus>();
+        List<ImagePlus> rawImages = options.isCenterOfMass()
+                ? new ArrayList<ImagePlus>() : null;
+
+        if (options.getMode() == CPCMacroOptions.InputMode.ROIS) {
+            ImagePlus reference = resolveImageForMacro(options.getReferenceTitle(),
+                    options.getReferencePath(), "reference");
+            if (reference == null) {
+                throw new IllegalArgumentException("ROI mode requires reference or reference_path.");
+            }
+            for (int i = 0; i < CPCMacroOptions.MAX_IMAGES; i++) {
+                String roiPath = options.getRoiPath(i);
+                if (!hasText(roiPath)) continue;
+                Roi[] rois = LabelUtils.loadRoiSet(roiPath);
+                if (rois.length == 0) {
+                    throw new IllegalArgumentException("roi" + (i + 1) + " is empty.");
+                }
+                ImagePlus labels = LabelUtils.roiSetToLabelImage(reference, rois);
+                labels.setTitle(baseNameWithoutExtension(roiPath));
+                images.add(labels);
+            }
+            if (images.size() < 2) {
+                throw new IllegalArgumentException("ROI mode requires at least 2 ROI set files.");
+            }
+            return new MacroInput(images, null);
+        }
+
+        for (int i = 0; i < CPCMacroOptions.MAX_IMAGES; i++) {
+            ImagePlus image = resolveImageForMacro(options.getImageTitle(i),
+                    options.getImagePath(i), "image" + (i + 1));
+            if (image == null) continue;
+            images.add(image);
+
+            if (rawImages != null) {
+                ImagePlus raw = resolveImageForMacro(options.getRawTitle(i),
+                        options.getRawPath(i), "raw" + (i + 1));
+                if (raw != null && (raw.getWidth() != image.getWidth()
+                        || raw.getHeight() != image.getHeight()
+                        || raw.getStackSize() != image.getStackSize())) {
+                    throw new IllegalArgumentException("raw" + (i + 1)
+                            + " dimensions do not match image" + (i + 1) + ".");
+                }
+                rawImages.add(raw);
+            }
+        }
+        if (images.size() < 2) {
+            throw new IllegalArgumentException("Label mode requires at least 2 label images.");
+        }
+        checkDuplicateImages(images);
+        return new MacroInput(images, rawImages);
+    }
+
+    private ImagePlus resolveImageForMacro(String title, String path, String label) {
+        if (hasText(path)) {
+            ImagePlus img = IJ.openImage(path.trim());
+            if (img == null) {
+                throw new IllegalArgumentException("Could not open " + label + "_path: " + path);
+            }
+            return img;
+        }
+        if (hasText(title)) {
+            ImagePlus img = WindowManager.getImage(title.trim());
+            if (img == null) {
+                throw new IllegalArgumentException("Open image not found for " + label + ": " + title);
+            }
+            return img;
+        }
+        return null;
+    }
+
+    private void showAndSaveMacroResult(CPCResult result, CPCMacroOptions options,
+                                        List<ImagePlus> images) {
+        CPCAnalysis analysis = result.analysis();
+        boolean display = !GraphicsEnvironment.isHeadless() && !options.isHideDisplay();
+        analysis.setDisplayResults(display);
+        if (options.isAutoSave()) {
+            analysis.setSaveDir(defaultSaveDir(options, images));
+        }
+        if (options.isPerObjectTables()) {
+            analysis.showConsolidatedResults(options.isExtendedData());
+        }
+        if (options.isSummaryTable()) {
+            analysis.showSummaryResults();
+        }
+        if (options.isMultiTarget()) {
+            if (options.isPerObjectTables()) {
+                analysis.showMultiTargetPerObjectResults(options.isExtendedData());
+            }
+            analysis.showMultiTargetSummary();
+        }
+        if (options.isCentroidMaps()) {
+            analysis.showCentroidLabelMaps();
+        }
+        IJ.showStatus("CPC: done.");
+    }
+
+    private String defaultSaveDir(CPCMacroOptions options, List<ImagePlus> images) {
+        if (hasText(options.getSaveDir())) {
+            return options.getSaveDir().trim();
+        }
+        if (images != null && !images.isEmpty()) {
+            ij.io.FileInfo fi = images.get(0).getOriginalFileInfo();
+            if (fi != null && fi.directory != null) {
+                return fi.directory;
+            }
+        }
+        return System.getProperty("user.home");
+    }
+
+    private void checkDuplicateImages(List<ImagePlus> images) {
+        for (int i = 0; i < images.size(); i++) {
+            for (int j = i + 1; j < images.size(); j++) {
+                if (images.get(i) == images.get(j)) {
+                    throw new IllegalArgumentException("image" + (i + 1)
+                            + " and image" + (j + 1) + " are the same image.");
+                }
+            }
+        }
+    }
+
+    private void recordMacroCall(CPCMacroOptions options) {
+        if (!Recorder.record) return;
+        try {
+            Recorder.recordString("run(\"Centre-Particle Coincidence\", \""
+                    + options.toMacroOptions() + "\");\n");
+        } catch (IllegalArgumentException ex) {
+            IJ.log("CPC: Could not record macro options: " + ex.getMessage());
+        }
+    }
+
+    private void reportMacroError(String message) {
+        String text = hasText(message) ? message : "Unknown CPC macro error.";
+        if (GraphicsEnvironment.isHeadless()) {
+            IJ.log("CPC ERROR: " + text);
+        } else {
+            IJ.error("CPC", text);
+        }
+    }
+
+    private static String baseNameWithoutExtension(String path) {
+        String name = new File(path).getName();
+        int dot = name.lastIndexOf('.');
+        return dot > 0 ? name.substring(0, dot) : name;
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && value.trim().length() > 0;
+    }
+
+    private static final class MacroInput {
+        final List<ImagePlus> images;
+        final List<ImagePlus> rawImages;
+
+        MacroInput(List<ImagePlus> images, List<ImagePlus> rawImages) {
+            this.images = images;
+            this.rawImages = rawImages;
+        }
     }
 
     /**

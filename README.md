@@ -71,6 +71,98 @@ Click the **Batch…** button to process entire folders of label images.
 
 ---
 
+## Macro And Java API
+
+### Minimal Macro
+
+Open two label images in Fiji, then run:
+
+```javascript
+run("Centre-Particle Coincidence", "image1=[Label A] image2=[Label B]");
+```
+
+### Batch-Friendly Macro
+
+Use forward slashes in paths on Windows.
+
+```javascript
+run("Centre-Particle Coincidence",
+    "image1_path=[C:/data/A_labels.tif] image2_path=[C:/data/B_labels.tif] " +
+    "auto_save save_dir=[C:/data/output] hide_display extended multi_target centroid_maps");
+```
+
+### Macro Options
+
+| Option | Default | Notes |
+| --- | --- | --- |
+| `mode=labels` or `mode=rois` | `labels` | Label-image mode or ROI-set mode. |
+| `image1=[Title]` ... `image5=[Title]` | none | Open label image titles. Use 2-5 images. |
+| `image1_path=[C:/path.tif]` ... `image5_path=[C:/path.tif]` | none | Label image files. Do not combine title and path for the same slot. |
+| `reference=[Title]`, `reference_path=[C:/ref.tif]` | none | Required only for `mode=rois`. |
+| `roi1=[C:/A.zip]` ... `roi5=[C:/E.zip]` | none | ROI sets for `mode=rois`; provide at least 2. |
+| `bidirectional`, `unidirectional` | `bidirectional` | Controls pair direction testing. |
+| `center_of_mass` | off | Uses raw images for intensity-weighted centroids. Label mode only. |
+| `raw1=[Title]`, `raw1_path=[C:/raw.tif]` ... | none | Raw images parallel to selected label slots. |
+| `objects`, `hide_objects` | `objects` | Per-object vs tables. |
+| `summary`, `hide_summary` | `summary` | Pairwise summary table. |
+| `extended` | off | Adds volume and centroid columns to per-object tables. |
+| `multi_target` | off | Adds multi-target per-object and summary outputs. |
+| `centroid_maps` | off | Creates centroid label maps. |
+| `auto_save` | off | Saves selected outputs into a `CPC/` subfolder tree. |
+| `save_dir=[C:/output]` | first image folder | Implies `auto_save`. |
+| `hide_display` | off | Suppresses result windows while still computing/saving outputs. |
+
+Bracketed values may contain spaces, but not brackets, quotes, backslashes, or line breaks. Use `/` path separators in macro strings.
+
+### Java API
+
+```java
+List<ImagePlus> labels = Arrays.asList(labelA, labelB, labelC);
+CPCResult result = CPC.run(CPCParameters.builder(labels)
+        .bidirectional(true)
+        .extendedData(true)
+        .includeMultiTarget(true)
+        .build());
+
+ResultsTable summary = result.getSummaryTable();
+ResultsTable objects = result.getConsolidatedTable();
+```
+
+The Java API does not open dialogs, show result windows, write files, or require active ImageJ windows. Pass `ImagePlus` instances directly; use raw images via `rawImages(...)` for intensity-weighted centroids.
+
+### Batch Java API
+
+```java
+CPCBatchResult batch = CPCBatchRunner.run(CPCBatchParameters.builder(
+        new File("C:/data/labels"),
+        "(.+?)_objects_(.+)\\.tif",
+        2)
+        .recursive(true)
+        .saveDir(new File("C:/data/output"))
+        .extendedData(true)
+        .build());
+```
+
+`CPCBatchRunner.preview(...)` returns the same group preview text shown in the UI. `CPCBatchRunner.run(...)` opens image files, closes them after processing, and writes the usual `CPC/` batch outputs when auto-save is enabled.
+
+### ROI Label API
+
+```java
+ImagePlus labels = CPCLabelImages.fromRoiSetFile(referenceImage, "C:/data/cells.zip");
+```
+
+### API Surface Decisions
+
+| Surface | Decision | Public API |
+| --- | --- | --- |
+| Single-image-set CPC analysis | Expose now | `CPC`, `CPCParameters`, `CPCResult` |
+| Macro/headless plugin execution | Expose now | `run("Centre-Particle Coincidence", "...")` |
+| Batch scanning, preview, and execution | Wrap now | `CPCBatchRunner`, `CPCBatchParameters`, `CPCBatchResult` |
+| ROI-set to label-image conversion | Wrap now | `CPCLabelImages` |
+| Swing dialogs and toggle controls | Defer | UI-only implementation detail |
+
+---
+
 ## Algorithm
 
 1. Scan all voxels in each label image, accumulating the centroid per label (geometric or intensity-weighted).

@@ -439,16 +439,16 @@ public class CPCBatch {
     /**
      * Process all groups: open images, run CPC, save results, close.
      */
-    static void runBatch(Map<String, Map<String, List<File>>> nestedGroups,
-                          Pattern labelPattern, int varyingGroup,
-                          boolean comWeighted, File rawRootFolder,
-                          Pattern rawPattern,
-                          boolean bidirectional,
-                          boolean perObject, boolean showSummary,
-                          boolean extendedData,
-                          boolean centroidMaps,
-                          boolean autoSave, String saveDir,
-                          boolean saveSubdirs) {
+    static CPCBatchResult runBatch(Map<String, Map<String, List<File>>> nestedGroups,
+                                   Pattern labelPattern, int varyingGroup,
+                                   boolean comWeighted, File rawRootFolder,
+                                   Pattern rawPattern,
+                                   boolean bidirectional,
+                                   boolean perObject, boolean showSummary,
+                                   boolean extendedData,
+                                   boolean centroidMaps,
+                                   boolean autoSave, String saveDir,
+                                   boolean saveSubdirs) {
         // Count totals
         int totalGroups = 0;
         int validGroups = 0;
@@ -692,6 +692,9 @@ public class CPCBatch {
         IJ.log("=== CPC Batch Complete: " + processed + " processed, "
                 + skipped + " skipped, " + errors + " error(s) ===");
         IJ.showStatus("CPC Batch: done (" + processed + " groups).");
+        File outputDirectory = autoSave ? new File(saveDir, "CPC") : null;
+        return new CPCBatchResult(totalGroups, validGroups, processed, skipped,
+                errors, outputDirectory);
     }
 
     /**

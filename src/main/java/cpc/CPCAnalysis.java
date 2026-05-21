@@ -753,7 +753,9 @@ public class CPCAnalysis {
         IJ.showStatus("CPC Multi: Done (" + n + " source images).");
     }
 
-    public void showMultiTargetPerObjectResults(boolean extendedData) {
+    /** Build one multi-target per-object table per source image without displaying or saving. */
+    public List<ResultsTable> getMultiTargetPerObjectTables(boolean extendedData) {
+        List<ResultsTable> tables = new ArrayList<ResultsTable>();
         for (MultiTargetResult mt : multiTargetResults) {
             ResultsTable rt = new ResultsTable();
             for (int k = 0; k < mt.objects.size(); k++) {
@@ -776,12 +778,23 @@ public class CPCAnalysis {
                     rt.addValue("Centroid Z (slice)", obj.cz);
                 }
             }
+            tables.add(rt);
+        }
+        return tables;
+    }
+
+    public void showMultiTargetPerObjectResults(boolean extendedData) {
+        List<ResultsTable> tables = getMultiTargetPerObjectTables(extendedData);
+        for (int i = 0; i < tables.size(); i++) {
+            ResultsTable rt = tables.get(i);
+            MultiTargetResult mt = multiTargetResults.get(i);
             if (displayResults) rt.show("CPC Multi: " + mt.sourceName);
             autoSave(rt, multiSaveDir, "CPC_Multi_" + sanitize(mt.sourceName) + ".csv");
         }
     }
 
-    public void showMultiTargetSummary() {
+    /** Build the multi-target summary table without displaying or saving. */
+    public ResultsTable getMultiTargetSummaryTable() {
         ResultsTable rt = new ResultsTable();
         for (MultiTargetResult mt : multiTargetResults) {
             // Count combination patterns
@@ -821,8 +834,13 @@ public class CPCAnalysis {
             rt.setValue("Pattern", row, "— Any —");
             rt.addValue("Count", anyCount);
             rt.addValue("% of Source",
-                    Math.round(anyCount * 10000.0 / mt.sourceTotal) / 100.0);
+                Math.round(anyCount * 10000.0 / mt.sourceTotal) / 100.0);
         }
+        return rt;
+    }
+
+    public void showMultiTargetSummary() {
+        ResultsTable rt = getMultiTargetSummaryTable();
         if (displayResults) rt.show("CPC Multi-Target Summary");
         autoSave(rt, multiSaveDir, "CPC_Multi-Target_Summary.csv");
     }
@@ -835,7 +853,9 @@ public class CPCAnalysis {
      * Creates centroid label maps: for each image, duplicates it and draws
      * all other images' centroids on top as cross markers.
      */
-    public void showCentroidLabelMaps() {
+    /** Build centroid label maps without displaying or saving. */
+    public List<ImagePlus> getCentroidLabelMaps() {
+        List<ImagePlus> maps = new ArrayList<ImagePlus>();
         int n = images.size();
         for (int i = 0; i < n; i++) {
             ImagePlus base = images.get(i);
@@ -857,6 +877,16 @@ public class CPCAnalysis {
             }
             ImagePlus map = createCentroidLabelMap(base, allCentroids,
                     base.getTitle() + " + " + otherNames + " centroids");
+            maps.add(map);
+        }
+        return maps;
+    }
+
+    public void showCentroidLabelMaps() {
+        List<ImagePlus> maps = getCentroidLabelMaps();
+        for (int i = 0; i < maps.size(); i++) {
+            ImagePlus base = images.get(i);
+            ImagePlus map = maps.get(i);
             if (displayResults) map.show();
             if (mapsSaveDir != null) {
                 ensureSaveDir(mapsSaveDir);
