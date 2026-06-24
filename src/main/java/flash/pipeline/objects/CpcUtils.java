@@ -193,6 +193,44 @@ public final class CpcUtils {
         return counts;
     }
 
+    /**
+     * Voxel-precise marker-centroid containment count, used to resolve fused/clustered objects.
+     * For each marker centroid, looks up the label in {@code targetLabels} at the marker's rounded
+     * centroid voxel and tallies per target label. The returned map is keyed by target object label
+     * → number of marker centroids whose centroid voxel lies <em>on that target object's voxels</em>.
+     *
+     * <p>No tolerance: only the single rounded centroid voxel is tested, using the same rounding as
+     * {@link #testCoincidence}, so a target object's count here equals its {@code _CPCContains_}
+     * value. Markers landing on background or outside the image contribute to no target object, and
+     * target objects with zero markers are simply absent from the map (treated as 0 downstream).
+     *
+     * <p>Stateless and reentrant — the input list is not mutated — so it is safe to call from the
+     * parallel per-image workers.
+     */
+    public static Map<Integer, Integer> countCentroidsInLabels(List<ObjectInfo> markerCentroids,
+                                                               ImagePlus targetLabels) {
+        Map<Integer, Integer> counts = new LinkedHashMap<Integer, Integer>();
+        if (markerCentroids == null || targetLabels == null || targetLabels.getStack() == null) {
+            return counts;
+        }
+        ImageStack stack = targetLabels.getStack();
+        int w = targetLabels.getWidth();
+        int h = targetLabels.getHeight();
+        int nSlices = stack.getSize();
+
+        for (ObjectInfo marker : markerCentroids) {
+            int x = (int) Math.round(marker.cx);
+            int y = (int) Math.round(marker.cy);
+            int z = (int) Math.round(marker.cz);
+            if (x < 0 || x >= w || y < 0 || y >= h || z < 0 || z >= nSlices) continue;
+            int targetLabel = labelFromPixel(stack.getProcessor(z + 1).getf(x, y));
+            if (targetLabel <= 0) continue;
+            Integer prev = counts.get(targetLabel);
+            counts.put(targetLabel, (prev != null ? prev : 0) + 1);
+        }
+        return counts;
+    }
+
     /** Deep copy object list so each pairwise test gets its own partnerLabel state. */
     public static List<ObjectInfo> copyObjects(List<ObjectInfo> originals) {
         if (originals == null) return new ArrayList<ObjectInfo>();
