@@ -2,6 +2,7 @@ cff-version: 1.2.0
 message: "If you use this plugin, please cite it as below."
 type: software
 title: "CPC — Centre-Particle Coincidence"
+doi: "10.5281/zenodo.21633355"
 abstract: >-
   ImageJ/Fiji plugin for object-based colocalization that decouples
   segmentation from coincidence detection by accepting any label

@@ -3,6 +3,7 @@
 [![Build](https://github.com/Jay2owe/CPC/actions/workflows/build-main.yml/badge.svg)](https://github.com/Jay2owe/CPC/actions/workflows/build-main.yml)
 [![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
 [![JitPack](https://jitpack.io/v/Jay2owe/CPC.svg)](https://jitpack.io/#Jay2owe/CPC)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21633355.svg)](https://doi.org/10.5281/zenodo.21633355)
 
 An ImageJ/Fiji plugin for object-based colocalization analysis. CPC determines colocalization by checking whether each object's centroid falls inside a segmented object in another channel — accepting any label image (StarDist, Cellpose, threshold, manual ROIs) or ROI set, so segmentation and colocalization are fully decoupled.
 
