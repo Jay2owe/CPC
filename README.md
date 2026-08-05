@@ -229,40 +229,18 @@ The built JAR will be at `target/CPC-<version>.jar`.
 
 ---
 
-## Citing CPC
-
-If you use CPC in published work, please cite it. A `CITATION.cff` file is provided at the repository root and is consumed by GitHub's "Cite this repository" widget. A Zenodo DOI will be added after the first clean BSD-licensed public release is archived.
-
-```
-Malcolm, J. (2026). CPC — Centre-Particle Coincidence (v1.5.0) [Software].
-GitHub. https://github.com/Jay2owe/CPC
-```
-
-```bibtex
-@software{malcolm_cpc_2026,
-  author    = {Malcolm, Jamie},
-  title     = {CPC --- Centre-Particle Coincidence},
-  year      = {2026},
-  version   = {1.4.0},
-  publisher = {GitHub},
-  url       = {https://github.com/Jay2owe/CPC}
-}
-```
-
----
-
 ## Citation
 
 If you use CPC in published work, please cite it. The **concept DOI** below
 always resolves to the latest release:
 
-> Malcolm, J. (2026). *CPC — Centre-Particle Coincidence* (Version 1.4.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21633355
+> Malcolm, J. (2026). *CPC — Centre-Particle Coincidence* (Version 1.5.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21633355
 
 ```bibtex
 @software{malcolm_cpc_2026,
   author    = {Malcolm, Jamie},
   title     = {{CPC} --- {C}entre-{P}article {C}oincidence},
-  version   = {1.4.0},
+  version   = {1.5.0},
   year      = {2026},
   publisher = {Zenodo},
   doi       = {10.5281/zenodo.21633355},
@@ -271,7 +249,8 @@ always resolves to the latest release:
 ```
 
 Where exact reproducibility matters, cite the DOI of the specific version you
-ran instead — v1.4.0 is [`10.5281/zenodo.21633356`](https://doi.org/10.5281/zenodo.21633356).
+ran instead. Zenodo mints one per archived release — v1.4.0 is
+[`10.5281/zenodo.21633356`](https://doi.org/10.5281/zenodo.21633356).
 
 GitHub's **Cite this repository** button (top right, generated from
 [`CITATION.cff`](CITATION.cff)) produces both APA and BibTeX automatically.
