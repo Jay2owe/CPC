@@ -220,12 +220,30 @@ CPC/
 
 Requires Java 8 or newer.
 
+CPC's analysis engine lives in two small modules that are **compiled into** the
+jar rather than required as installs, so a user never has to find them. They are
+published to no Maven repository on purpose: a core that could be downloaded
+separately is a core two plugins can disagree about the version of. Build them
+first — chassis before engine:
+
 ```bash
 export JAVA_HOME="/path/to/jdk"
+
+git clone --branch v0.1.0 https://github.com/Jay2owe/oc3d-core
+mvn -f oc3d-core/pom.xml -DskipTests install
+
+git clone --branch v0.1.0 https://github.com/Jay2owe/cpc-core
+mvn -f cpc-core/pom.xml -DskipTests install
+
 bash mvnw clean package
 ```
 
-The built JAR will be at `target/CPC-<version>.jar`.
+The built JAR will be at `target/CPC-<version>.jar`, with both cores shaded in
+under `cpc.internal.*`. `.github/workflows/build-main.yml` does exactly this and
+is the reference if the steps above drift.
+
+The tags are pinned rather than tracking a branch: the same CPC commit should
+always produce the same jar, which is the claim an archived release makes.
 
 ---
 
