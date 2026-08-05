@@ -16,8 +16,8 @@ authors:
 repository-code: "https://github.com/Jay2owe/CPC"
 url: "https://github.com/Jay2owe/CPC"
 license: BSD-3-Clause
-version: "1.4.0"
-date-released: "2026-05-17"
+version: "1.5.0"
+date-released: "2026-08-05"
 keywords:
   - imagej
   - fiji

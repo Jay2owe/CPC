@@ -11,7 +11,7 @@ An ImageJ/Fiji plugin for object-based colocalization analysis. CPC determines c
 
 ## Features
 
-- **2–5 channel support** — analyse any number of label images with all pairwise comparisons.
+- **2–5 channel support** — analyse any number of label images with all pairwise comparisons. The dialog and the macro interface expose five channel slots; the Java API and folder batch processing are not limited to five.
 - **Input flexibility** — accepts label images from any source, or ROI `.zip` files.
 - **Bidirectional analysis** — test both A-in-B and B-in-A for each pair.
 - **Intensity-weighted centroids** — optional centre-of-mass weighting from raw images.
@@ -129,7 +129,9 @@ ResultsTable summary = result.getSummaryTable();
 ResultsTable objects = result.getConsolidatedTable();
 ```
 
-The Java API does not open dialogs, show result windows, write files, or require active ImageJ windows. Pass `ImagePlus` instances directly; use raw images via `rawImages(...)` for intensity-weighted centroids.
+The Java API does not open dialogs, show result windows, write files, or require active ImageJ windows. Pass `ImagePlus` instances directly; use raw images via `rawImages(...)` for intensity-weighted centroids. It accepts two or more label images, with no upper limit — `CPCParameters.MAX_IMAGES` describes the dialog and macro slots, not a cap on `CPC.run`.
+
+Per-object rows come back ascending by label. The multi-target summary always carries a `None` row, including when its count is zero, so a script can read the non-colocalized count without checking whether the row exists.
 
 ### Batch Java API
 
@@ -232,7 +234,7 @@ The built JAR will be at `target/CPC-<version>.jar`.
 If you use CPC in published work, please cite it. A `CITATION.cff` file is provided at the repository root and is consumed by GitHub's "Cite this repository" widget. A Zenodo DOI will be added after the first clean BSD-licensed public release is archived.
 
 ```
-Malcolm, J. (2026). CPC — Centre-Particle Coincidence (v1.4.0) [Software].
+Malcolm, J. (2026). CPC — Centre-Particle Coincidence (v1.5.0) [Software].
 GitHub. https://github.com/Jay2owe/CPC
 ```
 

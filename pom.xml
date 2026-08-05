@@ -14,7 +14,7 @@
 
 	<groupId>io.github.jay2owe</groupId>
 	<artifactId>CPC</artifactId>
-	<version>1.4.0</version>
+	<version>1.5.0</version>
 
 	<name>CPC</name>
 	<description>Centre-Particle Coincidence — object-based colocalization from any label image or ROI set</description>
@@ -95,6 +95,23 @@
 	</repositories>
 
 	<dependencies>
+		<!--
+		  Compiled in, never shipped alongside. Both cores are shaded into this
+		  plugin's jar under cpc.internal.* by the shade plugin below, so a user
+		  installs one file and enables one update site, exactly as before.
+		  cpc-core brings oc3d-core, which brings net.imagej:ij and nothing else.
+
+		  A released version, not a SNAPSHOT. A shipped jar has to be traceable
+		  to source that still exists: a SNAPSHOT keeps resolving out of the
+		  local repository long after the source it was built from has moved on,
+		  so "which build is in this jar" stops having an answer.
+		-->
+		<dependency>
+			<groupId>io.github.jay2owe</groupId>
+			<artifactId>cpc-core</artifactId>
+			<version>0.1.0</version>
+		</dependency>
+
 		<dependency>
 			<groupId>net.imagej</groupId>
 			<artifactId>ij</artifactId>
@@ -109,6 +126,86 @@
 
 	<build>
 		<plugins>
+			<!--
+			  The cores are compiled in, not shipped beside. A user installs one
+			  jar and never learns either core exists.
+
+			  Two strings, not one. `artifactSet` names Maven COORDINATES and
+			  `relocation` names Java PACKAGES; they differ here
+			  (io.github.jay2owe vs sc.fiji.*) and a wrong coordinate does not
+			  error - it matches nothing, the build succeeds, and the jar ships
+			  without the core classes. That surfaces as NoClassDefFoundError in
+			  Fiji, at the moment a user clicks Run.
+
+			  Relocation is mandatory, not tidiness. Fiji has a flat
+			  classloader: if two plugins both shipped `sc.fiji.cpc.core.Channel`
+			  the first one loaded would win for both, and a version mismatch
+			  would produce wrong numbers rather than a crash.
+
+			  `cpc.CPC`, `cpc.CPCParameters` and everything else under `cpc` is
+			  the documented Java and macro API. It is NOT relocated; renaming it
+			  would break every script that calls it.
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<createDependencyReducedPom>false</createDependencyReducedPom>
+							<!--
+							  Ship the reachable core, not the whole chassis.
+							  oc3d-core carries the labeller, the full
+							  measurement pass, object maps, CSV scoring and the
+							  dialog model; CPC calls four of its classes and
+							  cpc-core calls two more. Without this, ~60 classes
+							  the plugin can never execute travel with it.
+
+							  Safe here because nothing in either core looks a
+							  class up by name — asserted by
+							  cpc-core's EmbeddabilityTest and checked by grep
+							  before shading was enabled. Minimisation prunes
+							  dependencies only; every cpc.* class this project
+							  compiles, including the plugins.config entry
+							  point, is kept regardless.
+							-->
+							<minimizeJar>true</minimizeJar>
+							<artifactSet>
+								<includes>
+									<include>io.github.jay2owe:cpc-core</include>
+									<include>io.github.jay2owe:oc3d-core</include>
+								</includes>
+							</artifactSet>
+							<relocations>
+								<relocation>
+									<pattern>sc.fiji.cpc.core</pattern>
+									<shadedPattern>cpc.internal.cpc</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>sc.fiji.oc3d.core</pattern>
+									<shadedPattern>cpc.internal.core</shadedPattern>
+								</relocation>
+							</relocations>
+							<filters>
+								<filter>
+									<artifact>*:*</artifact>
+									<excludes>
+										<exclude>META-INF/*.SF</exclude>
+										<exclude>META-INF/*.DSA</exclude>
+										<exclude>META-INF/*.RSA</exclude>
+										<exclude>META-INF/maven/**</exclude>
+									</excludes>
+								</filter>
+							</filters>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>license-maven-plugin</artifactId>

@@ -8,6 +8,8 @@
  */
 package cpc.ui;
 
+import sc.fiji.oc3d.core.ui.ToggleSwitch;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;

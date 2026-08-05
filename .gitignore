@@ -23,3 +23,6 @@ PUBLISHING_AUDIT.md
 docs/
 tools/
 src/test/
+
+# Superseded file-sync conflict copies, quarantined out of the source tree
+.conflicted-copies-*/

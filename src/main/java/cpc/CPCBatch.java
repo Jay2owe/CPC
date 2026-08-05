@@ -9,7 +9,7 @@
 package cpc;
 
 import cpc.ui.CPCDialog;
-import cpc.ui.ToggleSwitch;
+import sc.fiji.oc3d.core.ui.ToggleSwitch;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.measure.ResultsTable;
@@ -25,9 +25,12 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+
+import sc.fiji.oc3d.core.io.RegexGroupDiscovery;
 
 /**
  * Batch processing for CPC analysis.
@@ -37,6 +40,24 @@ import java.util.regex.PatternSyntaxException;
  * channel name), and runs CPC on each group.
  */
 public class CPCBatch {
+
+    /**
+     * File ordering within a group, which decides channel identity.
+     * <p>
+     * {@link File#compareTo} follows the platform: case-sensitive on Unix,
+     * case-insensitive on Windows. Kept as it was rather than made uniform,
+     * because changing it would silently reassign which image is channel one in
+     * existing users' batch runs.
+     */
+    private static final RegexGroupDiscovery.GroupOrder GROUP_ORDER =
+            RegexGroupDiscovery.GroupOrder.FILENAME;
+
+    /**
+     * Groups smaller than this are skipped. Note that CPC's batch has no upper
+     * bound: a group of six is analysed, even though the Java API caps a single
+     * run at five images.
+     */
+    private static final int MIN_GROUP_SIZE = 2;
 
     /**
      * Opens the batch processing dialog.
@@ -231,7 +252,7 @@ public class CPCBatch {
         d.showNonBlocking();
     }
 
-    // ── Grouping ──────────────────────────────────────────────────
+    // ── Grouping ──────────────────────────────────
 
     /**
      * Scan a single folder for files matching pattern, group by replacing
@@ -239,34 +260,7 @@ public class CPCBatch {
      */
     static Map<String, List<File>> findGroups(File folder, Pattern pattern,
                                                int varyingGroup) {
-        Map<String, List<File>> groups = new LinkedHashMap<String, List<File>>();
-        File[] files = folder.listFiles();
-        if (files == null) return groups;
-
-        Arrays.sort(files);
-
-        for (File f : files) {
-            if (!f.isFile()) continue;
-            Matcher m = pattern.matcher(f.getName());
-            if (!m.matches()) continue;
-
-            String key;
-            if (varyingGroup >= 1 && varyingGroup <= m.groupCount()) {
-                key = f.getName().substring(0, m.start(varyingGroup))
-                        + "*"
-                        + f.getName().substring(m.end(varyingGroup));
-            } else {
-                key = "all";
-            }
-
-            List<File> list = groups.get(key);
-            if (list == null) {
-                list = new ArrayList<File>();
-                groups.put(key, list);
-            }
-            list.add(f);
-        }
-        return groups;
+        return RegexGroupDiscovery.findGroups(folder, pattern, varyingGroup, GROUP_ORDER);
     }
 
     /**
@@ -276,101 +270,35 @@ public class CPCBatch {
     static Map<String, Map<String, List<File>>> findGroupsRecursive(
             File rootFolder, Pattern pattern, int varyingGroup,
             boolean recursive) {
-        Map<String, Map<String, List<File>>> result =
-                new LinkedHashMap<String, Map<String, List<File>>>();
-
-        if (recursive) {
-            walkDirectories(rootFolder, rootFolder, "", pattern,
-                    varyingGroup, result);
-        } else {
-            Map<String, List<File>> groups =
-                    findGroups(rootFolder, pattern, varyingGroup);
-            if (!groups.isEmpty()) {
-                result.put("", groups);
-            }
-        }
-        return result;
+        return findGroupsRecursive(rootFolder, pattern, varyingGroup, recursive, null);
     }
 
-    private static void walkDirectories(File root, File current,
-                                         String relativePath, Pattern pattern,
-                                         int varyingGroup,
-                                         Map<String, Map<String, List<File>>> result) {
-        Map<String, List<File>> groups =
-                findGroups(current, pattern, varyingGroup);
-        if (!groups.isEmpty()) {
-            result.put(relativePath, groups);
-        }
-
-        File[] subdirs = current.listFiles(File::isDirectory);
-        if (subdirs != null) {
-            Arrays.sort(subdirs);
-            for (File subdir : subdirs) {
-                String childPath = relativePath.isEmpty()
-                        ? subdir.getName()
-                        : relativePath + "/" + subdir.getName();
-                walkDirectories(root, subdir, childPath, pattern,
-                        varyingGroup, result);
-            }
-        }
+    /**
+     * As above, skipping directories the batch writes into.
+     *
+     * <p>Without the exclusion a recursive run whose save directory sits inside
+     * the scanned tree can discover its own output on the next run. Excluding by
+     * path rather than by folder name keeps a user's data folder that happens to
+     * be called {@code CPC} in scope.
+     */
+    static Map<String, Map<String, List<File>>> findGroupsRecursive(
+            File rootFolder, Pattern pattern, int varyingGroup,
+            boolean recursive, Set<File> excluded) {
+        return RegexGroupDiscovery.findGroupsRecursive(
+                rootFolder, pattern, varyingGroup, recursive, GROUP_ORDER, excluded);
     }
 
-    // ── Preview ───────────────────────────────────────────────────
+    // ── Preview ───────────────────────────────────
 
     /**
      * Build a human-readable preview of the nested group structure.
      */
     static String previewNestedGroups(
             Map<String, Map<String, List<File>>> nestedGroups) {
-        if (nestedGroups.isEmpty()) return "No matching files found.";
-
-        int totalFolders = nestedGroups.size();
-        int totalGroups = 0;
-        int validGroups = 0;
-        int totalFiles = 0;
-        for (Map<String, List<File>> fg : nestedGroups.values()) {
-            totalGroups += fg.size();
-            for (List<File> g : fg.values()) {
-                totalFiles += g.size();
-                if (g.size() >= 2) validGroups++;
-            }
-        }
-
-        StringBuilder sb = new StringBuilder();
-        sb.append(totalFolders).append(" folder(s), ")
-                .append(totalGroups).append(" group(s), ")
-                .append(validGroups).append(" runnable, ")
-                .append(totalFiles).append(" files\n\n");
-
-        for (Map.Entry<String, Map<String, List<File>>> folderEntry
-                : nestedGroups.entrySet()) {
-            String folderPath = folderEntry.getKey();
-            Map<String, List<File>> groups = folderEntry.getValue();
-
-            int folderFiles = 0;
-            for (List<File> g : groups.values()) folderFiles += g.size();
-
-            String displayFolder = folderPath.isEmpty()
-                    ? "(root)" : folderPath + "/";
-            sb.append(displayFolder)
-                    .append("  (").append(groups.size()).append(" groups, ")
-                    .append(folderFiles).append(" files)\n");
-
-            for (Map.Entry<String, List<File>> groupEntry : groups.entrySet()) {
-                List<File> files = groupEntry.getValue();
-                sb.append("  ").append(groupEntry.getKey())
-                        .append("  (").append(files.size())
-                        .append(files.size() < 2 ? " \u2014 SKIP" : "")
-                        .append(")\n");
-                for (File f : files) {
-                    sb.append("    ").append(f.getName()).append("\n");
-                }
-            }
-        }
-        return sb.toString();
+        return RegexGroupDiscovery.preview(nestedGroups, MIN_GROUP_SIZE);
     }
 
-    // ── Raw image matching ────────────────────────────────────────
+    // ── Raw image matching ───────────────────────────
 
     /**
      * Match raw images to label images by channel (varying group value)
@@ -381,44 +309,8 @@ public class CPCBatch {
     static List<File> matchRawImages(List<File> labelFiles, Pattern labelPattern,
                                       File rawFolder, Pattern rawPattern,
                                       int varyingGroup) {
-        // Index raw files by "contextKey|channel"
-        Map<String, File> rawLookup = new LinkedHashMap<String, File>();
-        File[] rawFiles = rawFolder.listFiles();
-        if (rawFiles != null) {
-            for (File f : rawFiles) {
-                if (!f.isFile()) continue;
-                Matcher m = rawPattern.matcher(f.getName());
-                if (!m.matches()) continue;
-                if (varyingGroup < 1 || varyingGroup > m.groupCount()) continue;
-                String channel = m.group(varyingGroup);
-                String ctx = buildContextKey(m, varyingGroup);
-                rawLookup.put(ctx + "|" + channel, f);
-            }
-        }
-
-        List<File> result = new ArrayList<File>();
-        for (File labelFile : labelFiles) {
-            Matcher m = labelPattern.matcher(labelFile.getName());
-            if (!m.matches() || varyingGroup < 1
-                    || varyingGroup > m.groupCount()) {
-                result.add(null);
-                continue;
-            }
-            String channel = m.group(varyingGroup);
-            String ctx = buildContextKey(m, varyingGroup);
-            result.add(rawLookup.get(ctx + "|" + channel));
-        }
-        return result;
-    }
-
-    private static String buildContextKey(Matcher m, int varyingGroup) {
-        StringBuilder ctx = new StringBuilder();
-        for (int g = 1; g <= m.groupCount(); g++) {
-            if (g == varyingGroup) continue;
-            if (ctx.length() > 0) ctx.append("|");
-            ctx.append(m.group(g));
-        }
-        return ctx.toString();
+        return RegexGroupDiscovery.matchByContextAndChannel(
+                labelFiles, labelPattern, rawFolder, rawPattern, varyingGroup);
     }
 
     // ── Batch execution ───────────────────────────────────────────

@@ -4,7 +4,7 @@ about: Something is broken
 labels: bug
 ---
 
-**CPC version**: (e.g. 1.4.0 — visible in the JAR filename)
+**CPC version**: (e.g. 1.5.0 — visible in the JAR filename)
 **Fiji version**: Help → About ImageJ
 **OS**: Windows / macOS / Linux + version
 

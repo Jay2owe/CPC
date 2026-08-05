@@ -19,7 +19,17 @@ import java.util.List;
  */
 public final class CPCParameters {
 
+    /** Fewer than two channels and there is no pair to compare. Enforced. */
     public static final int MIN_IMAGES = 2;
+
+    /**
+     * How many channel slots the dialog and the macro grammar expose.
+     * <p>
+     * Not a limit on {@link CPC#run}, which accepts as many as you pass — the
+     * batch runner always did, so rejecting a sixth image from Java while
+     * accepting it from a folder was an inconsistency rather than a safeguard.
+     * Kept for callers that size their own arrays by it.
+     */
     public static final int MAX_IMAGES = 5;
 
     private final List<ImagePlus> images;

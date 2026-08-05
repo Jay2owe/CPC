@@ -71,9 +71,12 @@ public final class CPC {
         if (images == null || images.size() < CPCParameters.MIN_IMAGES) {
             throw new IllegalArgumentException("CPC requires at least 2 label images.");
         }
-        if (images.size() > CPCParameters.MAX_IMAGES) {
-            throw new IllegalArgumentException("CPC supports at most 5 label images.");
-        }
+        // No upper bound. The five was a dialog limit that had leaked into the
+        // API: the batch runner has always analysed larger groups without
+        // complaint, so the same six images succeeded from a folder and were
+        // rejected from Java. Nothing in the analysis cares — every pair is
+        // tested independently — so the API now agrees with what batch does.
+        // The dialog and the macro grammar still expose five slots.
         for (int i = 0; i < images.size(); i++) {
             ImagePlus image = images.get(i);
             if (image == null) {

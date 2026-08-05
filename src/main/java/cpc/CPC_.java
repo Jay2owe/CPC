@@ -9,7 +9,7 @@
 package cpc;
 
 import cpc.ui.CPCDialog;
-import cpc.ui.ToggleSwitch;
+import sc.fiji.oc3d.core.ui.ToggleSwitch;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.Macro;
@@ -246,12 +246,12 @@ public class CPC_ implements PlugIn {
                     for (int i = 0; i < MAX_IMAGES; i++) {
                         if (roiPaths[i] == null || roiPaths[i].trim().isEmpty()) continue;
                         try {
-                            Roi[] rois = LabelUtils.loadRoiSet(roiPaths[i]);
+                            Roi[] rois = CPCLabelImages.loadRoiSet(roiPaths[i]);
                             if (rois.length == 0) {
                                 IJ.error("CPC", "ROI Set " + LETTERS[i] + " is empty.");
                                 return;
                             }
-                            resolved.add(LabelUtils.roiSetToLabelImage(ref, rois));
+                            resolved.add(CPCLabelImages.fromRois(ref, rois));
                         } catch (Exception ex) {
                             IJ.error("CPC", "Error loading ROI Set " + LETTERS[i] + ":\n" + ex.getMessage());
                             return;
@@ -347,11 +347,11 @@ public class CPC_ implements PlugIn {
             for (int i = 0; i < CPCMacroOptions.MAX_IMAGES; i++) {
                 String roiPath = options.getRoiPath(i);
                 if (!hasText(roiPath)) continue;
-                Roi[] rois = LabelUtils.loadRoiSet(roiPath);
+                Roi[] rois = CPCLabelImages.loadRoiSet(roiPath);
                 if (rois.length == 0) {
                     throw new IllegalArgumentException("roi" + (i + 1) + " is empty.");
                 }
-                ImagePlus labels = LabelUtils.roiSetToLabelImage(reference, rois);
+                ImagePlus labels = CPCLabelImages.fromRois(reference, rois);
                 labels.setTitle(baseNameWithoutExtension(roiPath));
                 images.add(labels);
             }

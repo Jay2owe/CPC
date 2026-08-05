@@ -14,8 +14,22 @@ import ij.gui.Roi;
 import java.io.File;
 import java.io.IOException;
 
+import sc.fiji.oc3d.core.ingest.LabelUtils;
+
 /**
  * Public facade for converting ROI sets into CPC-compatible label images.
+ * <p>
+ * The conversion itself moved to {@code oc3d-core}, where every plugin in the
+ * family shares it. The validation stayed here, because these messages are
+ * documented CPC behaviour and a caller that catches them by text should not
+ * have to change when the implementation moves house.
+ * <p>
+ * One behaviour change comes with the shared version: the label image is sized
+ * to the ROI count rather than always being 16-bit. The old fixed
+ * {@code ShortProcessor} wrapped silently above 65,535 ROIs, turning ROI 65,536
+ * into background with no error. A set of 300 ROIs now produces an 8-bit image
+ * where it used to produce a 16-bit one; the labels themselves, and every
+ * measurement taken from them, are unchanged.
  */
 public final class CPCLabelImages {
 

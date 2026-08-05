@@ -10,9 +10,7 @@ package cpc;
 
 import ij.IJ;
 import ij.ImagePlus;
-import ij.ImageStack;
 import ij.measure.ResultsTable;
-import ij.process.ImageProcessor;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -20,12 +18,29 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import sc.fiji.cpc.core.CentroidCoincidence;
+import sc.fiji.cpc.core.CentroidMapBuilder;
+import sc.fiji.cpc.core.Channel;
+import sc.fiji.cpc.core.CoincidenceObject;
+import sc.fiji.cpc.core.CoincidenceResult;
+import sc.fiji.cpc.core.MultiTargetSummary;
+import sc.fiji.cpc.core.PairwiseCoincidenceRunner;
+import sc.fiji.oc3d.core.measure.CentroidScan;
+
 /**
  * Centre-Particle Coincidence analysis.
  * <p>
  * For each object in image A, checks whether its centroid falls inside
  * an object in image B (and vice versa if bidirectional).
  * Supports 2–5 images with all pairwise comparisons.
+ * <p>
+ * The measurement and the test now live in {@code cpc-core}, so that other
+ * plugins can offer centroid coincidence without CPC being installed. What
+ * stays here is everything ImageJ-facing: building {@link ResultsTable}s,
+ * showing windows, writing the auto-save tree, and the legacy shapes the
+ * documented Java API exposes. The core returns models; this class turns them
+ * into tables, which is exactly the boundary that lets a plugin with a
+ * different table layout embed the same engine.
  */
 public class CPCAnalysis {
 
@@ -80,6 +95,7 @@ public class CPCAnalysis {
     private final List<DirectionResult> results = new ArrayList<DirectionResult>();
     private final List<MultiTargetResult> multiTargetResults = new ArrayList<MultiTargetResult>();
     private List<List<ObjectInfo>> cachedObjects;
+    private List<Channel> channels;
     private String saveDir;
     private String objectsSaveDir;
     private String multiSaveDir;
@@ -197,49 +213,91 @@ public class CPCAnalysis {
         this.bidirectional = bidirectional;
     }
 
-    private List<List<ObjectInfo>> getOrExtractObjects() {
-        if (cachedObjects != null) return cachedObjects;
+    /**
+     * Scans each image once, and keeps both views of the result: the core's
+     * channels, which every later call works from, and the legacy
+     * {@link ObjectInfo} lists the documented Java API hands out.
+     */
+    private List<Channel> getOrBuildChannels() {
+        if (channels != null) return channels;
         int n = images.size();
-        cachedObjects = new ArrayList<List<ObjectInfo>>();
+        channels = new ArrayList<Channel>(n);
+        cachedObjects = new ArrayList<List<ObjectInfo>>(n);
         for (int i = 0; i < n; i++) {
             IJ.showStatus("CPC: Extracting objects from image " + (i + 1) + "/" + n + "...");
+            IJ.showProgress(i, n);
             ImagePlus raw = (rawImages != null && i < rawImages.size()) ? rawImages.get(i) : null;
-            cachedObjects.add(extractObjects(images.get(i), raw));
+            Channel channel = Channel.of(images.get(i).getTitle(), images.get(i), raw);
+            channels.add(channel);
+            cachedObjects.add(toObjectInfo(channel.centroids()));
         }
+        IJ.showProgress(1.0);
+        return channels;
+    }
+
+    private List<List<ObjectInfo>> getOrExtractObjects() {
+        getOrBuildChannels();
         return cachedObjects;
     }
 
     public void run() {
-        int n = images.size();
-        List<List<ObjectInfo>> allObjects = getOrExtractObjects();
+        List<Channel> chans = getOrBuildChannels();
+        int n = chans.size();
 
-        // Run all pairwise comparisons
-        for (int i = 0; i < n; i++) {
-            for (int j = i + 1; j < n; j++) {
-                ImagePlus imgI = images.get(i);
-                ImagePlus imgJ = images.get(j);
-                List<ObjectInfo> objI = allObjects.get(i);
-                List<ObjectInfo> objJ = allObjects.get(j);
-
-                // Forward: i centroids in j
-                IJ.showStatus("CPC: Testing " + imgI.getTitle() + " in " + imgJ.getTitle() + "...");
-                List<ObjectInfo> objICopy = copyObjects(objI);
-                testCoincidence(objICopy, imgJ);
-                results.add(buildResult(imgI.getTitle(), imgJ.getTitle(), objICopy, objJ.size()));
-
-                if (bidirectional) {
-                    // Reverse: j centroids in i
-                    IJ.showStatus("CPC: Testing " + imgJ.getTitle() + " in " + imgI.getTitle() + "...");
-                    List<ObjectInfo> objJCopy = copyObjects(objJ);
-                    testCoincidence(objJCopy, imgI);
-                    results.add(buildResult(imgJ.getTitle(), imgI.getTitle(), objJCopy, objI.size()));
-                }
-            }
+        CoincidenceResult coincidence = PairwiseCoincidenceRunner.run(chans, bidirectional);
+        for (sc.fiji.cpc.core.DirectionResult direction : coincidence.directions()) {
+            IJ.showStatus("CPC: Testing " + direction.sourceName()
+                    + " in " + direction.targetName() + "...");
+            results.add(toDirectionResult(direction));
         }
 
         int totalObjs = 0;
-        for (List<ObjectInfo> objs : allObjects) totalObjs += objs.size();
+        for (List<ObjectInfo> objs : cachedObjects) totalObjs += objs.size();
         IJ.showStatus("CPC: Done (" + totalObjs + " objects across " + n + " images, " + results.size() + " comparisons).");
+    }
+
+    // ── Adapters between the core's models and CPC's legacy shapes ────
+
+    private static List<ObjectInfo> toObjectInfo(CentroidScan.Result centroids) {
+        List<ObjectInfo> objects = new ArrayList<ObjectInfo>(centroids.objectCount());
+        for (CentroidScan.Centroid centroid : centroids.centroids()) {
+            objects.add(toObjectInfo(centroid, 0));
+        }
+        return objects;
+    }
+
+    private static ObjectInfo toObjectInfo(CentroidScan.Centroid centroid, int partnerLabel) {
+        ObjectInfo object = new ObjectInfo(centroid.label());
+        object.cx = centroid.x();
+        object.cy = centroid.y();
+        object.cz = centroid.z();
+        object.voxelCount = (int) centroid.voxelCount();
+        object.partnerLabel = partnerLabel;
+        return object;
+    }
+
+    private static ObjectInfo toObjectInfo(CoincidenceObject object) {
+        ObjectInfo info = new ObjectInfo(object.label());
+        info.cx = object.x();
+        info.cy = object.y();
+        info.cz = object.z();
+        info.voxelCount = (int) object.voxelCount();
+        info.partnerLabel = object.partnerLabel();
+        return info;
+    }
+
+    private static DirectionResult toDirectionResult(sc.fiji.cpc.core.DirectionResult direction) {
+        DirectionResult result = new DirectionResult();
+        result.sourceName = direction.sourceName();
+        result.targetName = direction.targetName();
+        result.objects = new ArrayList<ObjectInfo>(direction.objects().size());
+        for (CoincidenceObject object : direction.objects()) {
+            result.objects.add(toObjectInfo(object));
+        }
+        result.totalObjects = direction.totalObjects();
+        result.targetTotalObjects = direction.targetObjectCount();
+        result.colocalizedCount = direction.coincidentCount();
+        return result;
     }
 
     /** Deep copy object list so each pairwise test gets its own partnerLabel state. */
@@ -269,98 +327,15 @@ public class CPCAnalysis {
      * Extract all objects and compute their centroids from a label image.
      * If rawImg is provided, computes intensity-weighted centroids (center of mass)
      * using pixel intensities from rawImg as weights. Otherwise geometric centroid.
+     * <p>
+     * Objects come back ascending by label, which is the order every table in
+     * the plugin family uses. The measurement itself is
+     * {@code oc3d-core}'s, so a plugin that measures with one and tests
+     * coincidence with the other cannot end up with two different ideas of
+     * which voxels belong to which object.
      */
     public static List<ObjectInfo> extractObjects(ImagePlus img, ImagePlus rawImg) {
-        ImageStack stack = img.getStack();
-        int w = img.getWidth();
-        int h = img.getHeight();
-        int nSlices = stack.getSize();
-
-        if (rawImg != null) {
-            // Intensity-weighted path: [sumX*I, sumY*I, sumZ*I, sumI, sumX, sumY, sumZ, count]
-            ImageStack rawStack = rawImg.getStack();
-            Map<Integer, double[]> stats = new LinkedHashMap<Integer, double[]>();
-
-            for (int z = 0; z < nSlices; z++) {
-                ImageProcessor ip = stack.getProcessor(z + 1);
-                ImageProcessor rp = rawStack.getProcessor(z + 1);
-                for (int y = 0; y < h; y++) {
-                    for (int x = 0; x < w; x++) {
-                        int label = (int) ip.getf(x, y);
-                        if (label <= 0) continue;
-                        double intensity = rp.getf(x, y);
-                        double[] s = stats.get(label);
-                        if (s == null) {
-                            s = new double[8];
-                            stats.put(label, s);
-                        }
-                        s[0] += x * intensity;
-                        s[1] += y * intensity;
-                        s[2] += z * intensity;
-                        s[3] += intensity;
-                        s[4] += x;
-                        s[5] += y;
-                        s[6] += z;
-                        s[7]++;
-                    }
-                }
-                IJ.showProgress(z + 1, nSlices * 2);
-            }
-
-            List<ObjectInfo> objects = new ArrayList<ObjectInfo>(stats.size());
-            for (Map.Entry<Integer, double[]> entry : stats.entrySet()) {
-                ObjectInfo obj = new ObjectInfo(entry.getKey());
-                double[] s = entry.getValue();
-                obj.voxelCount = (int) s[7];
-                if (s[3] > 0) {
-                    obj.cx = s[0] / s[3];
-                    obj.cy = s[1] / s[3];
-                    obj.cz = s[2] / s[3];
-                } else {
-                    // Zero total intensity — fall back to geometric centroid
-                    obj.cx = s[4] / s[7];
-                    obj.cy = s[5] / s[7];
-                    obj.cz = s[6] / s[7];
-                }
-                objects.add(obj);
-            }
-            return objects;
-        }
-
-        // Geometric centroid path (original): accumulate [sumX, sumY, sumZ, count]
-        Map<Integer, long[]> stats = new LinkedHashMap<Integer, long[]>();
-
-        for (int z = 0; z < nSlices; z++) {
-            ImageProcessor ip = stack.getProcessor(z + 1);
-            for (int y = 0; y < h; y++) {
-                for (int x = 0; x < w; x++) {
-                    int label = (int) ip.getf(x, y);
-                    if (label <= 0) continue;
-                    long[] s = stats.get(label);
-                    if (s == null) {
-                        s = new long[4];
-                        stats.put(label, s);
-                    }
-                    s[0] += x;
-                    s[1] += y;
-                    s[2] += z;
-                    s[3]++;
-                }
-            }
-            IJ.showProgress(z + 1, nSlices * 2);
-        }
-
-        List<ObjectInfo> objects = new ArrayList<ObjectInfo>(stats.size());
-        for (Map.Entry<Integer, long[]> entry : stats.entrySet()) {
-            ObjectInfo obj = new ObjectInfo(entry.getKey());
-            long[] s = entry.getValue();
-            obj.voxelCount = (int) s[3];
-            obj.cx = (double) s[0] / s[3];
-            obj.cy = (double) s[1] / s[3];
-            obj.cz = (double) s[2] / s[3];
-            objects.add(obj);
-        }
-        return objects;
+        return toObjectInfo(CentroidScan.scan(img, rawImg));
     }
 
     /**
@@ -368,34 +343,10 @@ public class CPCAnalysis {
      * at the object's centroid position.
      */
     public static void testCoincidence(List<ObjectInfo> objects, ImagePlus targetImage) {
-        ImageStack stack = targetImage.getStack();
-        int w = targetImage.getWidth();
-        int h = targetImage.getHeight();
-        int nSlices = stack.getSize();
-
         for (ObjectInfo obj : objects) {
-            int x = (int) Math.round(obj.cx);
-            int y = (int) Math.round(obj.cy);
-            int z = (int) Math.round(obj.cz);
-
-            if (x >= 0 && x < w && y >= 0 && y < h && z >= 0 && z < nSlices) {
-                obj.partnerLabel = (int) stack.getProcessor(z + 1).getf(x, y);
-            }
+            obj.partnerLabel = CentroidCoincidence.labelAt(
+                    targetImage, obj.cx, obj.cy, obj.cz);
         }
-    }
-
-    private DirectionResult buildResult(String source, String target, List<ObjectInfo> objects, int targetTotalObjects) {
-        DirectionResult r = new DirectionResult();
-        r.sourceName = source;
-        r.targetName = target;
-        r.objects = objects;
-        r.totalObjects = objects.size();
-        r.targetTotalObjects = targetTotalObjects;
-        r.colocalizedCount = 0;
-        for (ObjectInfo obj : objects) {
-            if (obj.isColocalized()) r.colocalizedCount++;
-        }
-        return r;
     }
 
     // ── Results display ────────────────────────────────────────────
@@ -698,21 +649,6 @@ public class CPCAnalysis {
         return sb.toString();
     }
 
-    /** Find cached objects for an image by title. */
-    private List<ObjectInfo> findTargetObjects(String title) {
-        if (cachedObjects != null) {
-            for (int i = 0; i < images.size(); i++) {
-                if (images.get(i).getTitle().equals(title)) {
-                    return cachedObjects.get(i);
-                }
-            }
-        }
-        for (ImagePlus img : images) {
-            if (img.getTitle().equals(title)) return extractObjects(img);
-        }
-        return new ArrayList<ObjectInfo>();
-    }
-
     // ── Multi-target analysis ─────────────────────────────────────────
 
     /**
@@ -720,34 +656,27 @@ public class CPCAnalysis {
      * Builds combination data showing which targets each object colocalizes with.
      */
     public void runMultiTarget() {
-        int n = images.size();
-        List<List<ObjectInfo>> allObjects = getOrExtractObjects();
+        List<Channel> chans = getOrBuildChannels();
+        int n = chans.size();
 
-        for (int src = 0; src < n; src++) {
+        for (sc.fiji.cpc.core.MultiTargetResult core : MultiTargetSummary.run(chans)) {
+            IJ.showStatus("CPC Multi: " + core.sourceName() + " → " + core.targetNames() + "...");
             MultiTargetResult mt = new MultiTargetResult();
-            mt.sourceName = images.get(src).getTitle();
-            mt.targetNames = new ArrayList<String>();
-            mt.objects = allObjects.get(src);
+            mt.sourceName = core.sourceName();
+            mt.targetNames = new ArrayList<String>(core.targetNames());
+            mt.objects = new ArrayList<ObjectInfo>(core.objects().size());
+            mt.objectPartners = new ArrayList<Map<String, Integer>>(core.objects().size());
+            for (int k = 0; k < core.objects().size(); k++) {
+                // partnerLabel stays 0 here, as it always has. In a
+                // multi-target row the answer is the per-target map, and
+                // picking one target's partner to put in a single field would
+                // be an arbitrary choice presented as a fact.
+                ObjectInfo object = toObjectInfo(core.objects().get(k));
+                object.partnerLabel = 0;
+                mt.objects.add(object);
+                mt.objectPartners.add(new LinkedHashMap<String, Integer>(core.partnersFor(k)));
+            }
             mt.sourceTotal = mt.objects.size();
-            mt.objectPartners = new ArrayList<Map<String, Integer>>();
-            for (int k = 0; k < mt.objects.size(); k++) {
-                mt.objectPartners.add(new LinkedHashMap<String, Integer>());
-            }
-
-            for (int tgt = 0; tgt < n; tgt++) {
-                if (tgt == src) continue;
-                String targetName = images.get(tgt).getTitle();
-                mt.targetNames.add(targetName);
-
-                IJ.showStatus("CPC Multi: " + mt.sourceName + " → " + targetName + "...");
-                List<ObjectInfo> copy = copyObjects(mt.objects);
-                testCoincidence(copy, images.get(tgt));
-
-                for (int k = 0; k < copy.size(); k++) {
-                    mt.objectPartners.get(k).put(targetName, copy.get(k).partnerLabel);
-                }
-            }
-
             multiTargetResults.add(mt);
         }
         IJ.showStatus("CPC Multi: Done (" + n + " source images).");
@@ -827,6 +756,23 @@ public class CPCAnalysis {
                         Math.round(entry.getValue() * 10000.0 / mt.sourceTotal) / 100.0);
             }
 
+            // The None row is always present, even at zero.
+            //
+            // It is documented as script-readable: a script locates it and
+            // reads the non-colocalized count directly. Emitting it only when
+            // something failed to colocalize means the row vanishes on exactly
+            // the datasets where everything worked, and a script that indexes
+            // rows positionally then reads the totals row instead — silently,
+            // and with a number that looks plausible.
+            if (!patternCounts.containsKey("None")) {
+                int noneRow = rt.getCounter();
+                rt.incrementCounter();
+                rt.setValue("Source", noneRow, mt.sourceName);
+                rt.setValue("Pattern", noneRow, "None");
+                rt.addValue("Count", 0);
+                rt.addValue("% of Source", 0.0);
+            }
+
             // Totals row
             int row = rt.getCounter();
             rt.incrementCounter();
@@ -855,29 +801,17 @@ public class CPCAnalysis {
      */
     /** Build centroid label maps without displaying or saving. */
     public List<ImagePlus> getCentroidLabelMaps() {
+        List<Channel> chans = getOrBuildChannels();
         List<ImagePlus> maps = new ArrayList<ImagePlus>();
-        int n = images.size();
-        for (int i = 0; i < n; i++) {
-            ImagePlus base = images.get(i);
-            // Collect centroids from all other images
-            List<ObjectInfo> allCentroids = new ArrayList<ObjectInfo>();
+        for (int i = 0; i < chans.size(); i++) {
             StringBuilder otherNames = new StringBuilder();
-            for (int j = 0; j < n; j++) {
+            for (int j = 0; j < chans.size(); j++) {
                 if (j == i) continue;
-                // Find the result where source=j, target=i to get j's objects
-                List<ObjectInfo> objs = findObjectsForImage(j, i);
-                if (objs != null) {
-                    allCentroids.addAll(objs);
-                } else {
-                    // Extract fresh if no result exists (unidirectional case)
-                    allCentroids.addAll(extractObjects(images.get(j)));
-                }
                 if (otherNames.length() > 0) otherNames.append("+");
-                otherNames.append(images.get(j).getTitle());
+                otherNames.append(chans.get(j).name());
             }
-            ImagePlus map = createCentroidLabelMap(base, allCentroids,
-                    base.getTitle() + " + " + otherNames + " centroids");
-            maps.add(map);
+            maps.add(CentroidMapBuilder.build(chans.get(i), chans,
+                    chans.get(i).name() + " + " + otherNames + " centroids"));
         }
         return maps;
     }
@@ -900,44 +834,6 @@ public class CPCAnalysis {
     /** @deprecated Use {@link #showCentroidLabelMaps()} instead. */
     public void showCentroidLabelMaps(ImagePlus origA, ImagePlus origB) {
         showCentroidLabelMaps();
-    }
-
-    private List<ObjectInfo> findObjectsForImage(int sourceIdx, int targetIdx) {
-        String sourceName = images.get(sourceIdx).getTitle();
-        String targetName = images.get(targetIdx).getTitle();
-        for (DirectionResult r : results) {
-            if (r.sourceName.equals(sourceName) && r.targetName.equals(targetName)) {
-                return r.objects;
-            }
-        }
-        return null;
-    }
-
-    private ImagePlus createCentroidLabelMap(ImagePlus labelImg, List<ObjectInfo> centroids, String title) {
-        ImagePlus dup = labelImg.duplicate();
-        dup.setTitle(title);
-        ImageStack stack = dup.getStack();
-        int w = dup.getWidth();
-        int h = dup.getHeight();
-        int nSlices = stack.getSize();
-
-        int radius = 2;
-        for (ObjectInfo obj : centroids) {
-            int cx = (int) Math.round(obj.cx);
-            int cy = (int) Math.round(obj.cy);
-            int cz = (int) Math.round(obj.cz);
-            if (cz < 0 || cz >= nSlices) continue;
-
-            ImageProcessor ip = stack.getProcessor(cz + 1);
-            // Draw a cross marker
-            for (int d = -radius; d <= radius; d++) {
-                int px = cx + d;
-                int py = cy + d;
-                if (px >= 0 && px < w) ip.setf(px, cy, obj.label);
-                if (py >= 0 && py < h) ip.setf(cx, py, obj.label);
-            }
-        }
-        return dup;
     }
 
     // ── Getters ────────────────────────────────────────────────────
