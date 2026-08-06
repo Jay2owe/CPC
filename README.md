@@ -267,8 +267,17 @@ always resolves to the latest release:
 ```
 
 Where exact reproducibility matters, cite the DOI of the specific version you
-ran instead. Zenodo mints one per archived release — v1.4.0 is
-[`10.5281/zenodo.21633356`](https://doi.org/10.5281/zenodo.21633356).
+ran instead. Zenodo mints one per archived release:
+
+| Version | DOI |
+| --- | --- |
+| v1.5.0 | [`10.5281/zenodo.21812272`](https://doi.org/10.5281/zenodo.21812272) |
+| v1.4.0 | [`10.5281/zenodo.21633356`](https://doi.org/10.5281/zenodo.21633356) |
+
+The Zenodo archive is a snapshot of this repository's source. Building it needs
+the two engine modules named under [Building from Source](#building-from-source),
+which live in their own repositories at pinned tags — so an archived CPC release
+is reproducible for as long as those remain reachable.
 
 GitHub's **Cite this repository** button (top right, generated from
 [`CITATION.cff`](CITATION.cff)) produces both APA and BibTeX automatically.
