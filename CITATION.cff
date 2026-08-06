@@ -24,3 +24,35 @@ keywords:
   - colocalization
   - microscopy
   - image-analysis
+references:
+  # The two engine modules compiled into this release. They are not separate
+  # installs — both are shaded into the plugin jar — but their source is needed
+  # to rebuild it, so they are archived and cited here. Version DOIs, not
+  # concept DOIs: the concept DOI would follow each module to its latest
+  # release, which is not what CPC 1.5.0 was built against.
+  - type: software
+    title: "cpc-core"
+    version: "0.1.0"
+    doi: "10.5281/zenodo.21822704"
+    year: 2026
+    license: BSD-3-Clause
+    repository-code: "https://github.com/Jay2owe/cpc-core"
+    notes: "Centre-Particle Coincidence analysis engine, compiled into CPC 1.5.0."
+    authors:
+      - given-names: Jamie
+        family-names: Malcolm
+        orcid: "https://orcid.org/0009-0008-3862-2776"
+        affiliation: "UK Dementia Research Institute at Imperial College London"
+  - type: software
+    title: "oc3d-core"
+    version: "0.1.0"
+    doi: "10.5281/zenodo.21822702"
+    year: 2026
+    license: BSD-3-Clause
+    repository-code: "https://github.com/Jay2owe/oc3d-core"
+    notes: "Shared 3D Objects Counter engine, compiled into CPC 1.5.0 via cpc-core 0.1.0."
+    authors:
+      - given-names: Jamie
+        family-names: Malcolm
+        orcid: "https://orcid.org/0009-0008-3862-2776"
+        affiliation: "UK Dementia Research Institute at Imperial College London"

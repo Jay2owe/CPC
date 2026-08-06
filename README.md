@@ -274,10 +274,26 @@ ran instead. Zenodo mints one per archived release:
 | v1.5.0 | [`10.5281/zenodo.21812272`](https://doi.org/10.5281/zenodo.21812272) |
 | v1.4.0 | [`10.5281/zenodo.21633356`](https://doi.org/10.5281/zenodo.21633356) |
 
-The Zenodo archive is a snapshot of this repository's source. Building it needs
-the two engine modules named under [Building from Source](#building-from-source),
-which live in their own repositories at pinned tags — so an archived CPC release
-is reproducible for as long as those remain reachable.
+### The engine modules
+
+The Zenodo archive is a snapshot of this repository's source, and building it
+needs the two engine modules named under
+[Building from Source](#building-from-source). Both are archived in their own
+right, so the three DOIs below are together sufficient to rebuild CPC 1.5.0 —
+no GitHub required:
+
+| Module | Version used by CPC 1.5.0 | Version DOI | Concept DOI |
+| --- | --- | --- | --- |
+| `cpc-core` | 0.1.0 | [`10.5281/zenodo.21822704`](https://doi.org/10.5281/zenodo.21822704) | [`10.5281/zenodo.21822703`](https://doi.org/10.5281/zenodo.21822703) |
+| `oc3d-core` | 0.1.0 | [`10.5281/zenodo.21822702`](https://doi.org/10.5281/zenodo.21822702) | [`10.5281/zenodo.21822701`](https://doi.org/10.5281/zenodo.21822701) |
+
+The chain is `CPC 1.5.0` → `cpc-core 0.1.0` → `oc3d-core 0.1.0` → `net.imagej:ij`.
+Cite the **version** DOIs, not the concept DOIs, when reproducibility is the
+point: the concept DOI follows each module forward to its latest release, which
+is not what CPC 1.5.0 was built against.
+
+Neither module is a separate install. Both are compiled into the plugin jar, so
+this affects how CPC is *rebuilt*, never how it is used.
 
 GitHub's **Cite this repository** button (top right, generated from
 [`CITATION.cff`](CITATION.cff)) produces both APA and BibTeX automatically.
