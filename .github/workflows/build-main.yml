@@ -21,26 +21,26 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
         with:
           java-version: '8'
           distribution: 'zulu'
       - name: Cache Maven repo
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2-
 
       - name: Check out oc3d-core
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: Jay2owe/oc3d-core
           ref: ${{ env.OC3D_CORE_TAG }}
           path: .cores/oc3d-core
       - name: Check out cpc-core
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: Jay2owe/cpc-core
           ref: ${{ env.CPC_CORE_TAG }}
@@ -57,7 +57,7 @@ jobs:
       - name: Build
         run: bash mvnw clean package
       - name: Upload jar
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: CPC-jar
           path: target/CPC-*.jar
