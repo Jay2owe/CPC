@@ -84,7 +84,10 @@ simplicity is the point: the result for any single object can be verified by eye
 against the optional centroid overlay maps, which matters when a colocalization
 count is going into a figure. `CPC` has been used in the authors' laboratory for
 marker co-expression analysis in fluorescence histology, and forms the chassis for
-a family of related object-analysis plugins.
+a family of related object-analysis plugins. The analysis was developed from April
+2026 within a larger histology pipeline from the same laboratory and extracted as a
+standalone plugin the following month; its pre-extraction development history is
+preserved on the repository's `prehistory` branch.
 
 # Acknowledgements
 
