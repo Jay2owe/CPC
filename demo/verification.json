@@ -1,0 +1,43 @@
+{
+  "verified_on": "2026-09-30",
+  "operating_system": "Windows 11 Home (10.0.26200)",
+  "cpu": "AMD Ryzen 7 7730U (8 cores / 16 threads)",
+  "ram_gb": 32,
+  "storage": "SSD",
+  "software": {
+    "cpc": "1.5.0",
+    "imagej": "2.16.0 / 1.54p",
+    "java": "11.0.31"
+  },
+  "cpc_jar_sha256": "626b01ef23c92060341fb512c4aabe35e1edba5b6db7490027414eb8432f75c0",
+  "verification_route": "Supplied macro executed in an isolated Fiji installation through the local ImageJ script interface. Only the macro-file location and output-folder selection were supplied automatically.",
+  "demo_elapsed_seconds": 0.662,
+  "plugin_elapsed_seconds_reported_by_macro": 0.437,
+  "timing_scope": "Automated macro execution including TIFF loading, bidirectional analysis, CSV output and small local script-interface overhead; excludes installation, Fiji startup and manual folder selection.",
+  "installation_time": "Planning estimate: 1\u20135 minutes with Fiji installed, or 5\u201315 minutes including Fiji; not a measured fresh-install benchmark.",
+  "objects_per_map": 4,
+  "dimensions_zyx": [
+    5,
+    32,
+    32
+  ],
+  "image_dataset_bytes": 22544,
+  "validation": "Both summary rows and all eight object rows match known answers, including volumes, XYZ centroids, coincidence flags, partner labels and contains counts. TIFF shape, axes, uint16 labels and calibration checked; both TIFFs regenerate byte-for-byte. Validator rejects an incorrect percentage and generator refuses a nonempty output folder.",
+  "generation_dependencies": {
+    "numpy": "2.1.0",
+    "tifffile": "2026.3.3"
+  },
+  "source_sha256": {
+    "data/Demo_A.tif": "53b59a5f26c15b4c6d679c25d48c48b12ae0df5c0b7d8ae280324c6b66c65565",
+    "data/Demo_B.tif": "f3766f85c530fd2aa4615ffb340abad45ace9b88ac6423692fd3f2ad8956f884",
+    "run_demo.ijm": "29b0c04ccb95b3051515b613215c147c4df5b824e7d16f00323360d1076a02ed",
+    "generate_data.py": "e5ba31a4cc041c9f952c4eef232b6f50ef2de9338e9e7d3074c186c7fbd37e6e",
+    "validate_outputs.py": "deca5a2d3c886a682dcaf7baed2445881f8a0bafd5db1a94777e5dee46969d8b",
+    "expected_result.json": "c7a87e3a67882eede1156bd864dbead6f2495783be40aeadea19124b29725793"
+  },
+  "output_sha256": {
+    "CPC/Objects/CPC_Demo_A_vs_Demo_B.csv": "7cd23f413c5a0559632f5be942bc187611467a6a02e66c9eb0c1dfd7aa7fe099",
+    "CPC/Objects/CPC_Demo_B_vs_Demo_A.csv": "e645662fc68b908742910d5719f1262198c6e01e6bf1bdd40e05acd75c947574",
+    "CPC/Objects/CPC_Summary.csv": "3bce24fc61f340feb0c893f9d7f0bbed05000d0951d63a482d7ac73dd2a699e8"
+  }
+}

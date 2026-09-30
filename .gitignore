@@ -26,3 +26,23 @@ src/test/
 
 # Superseded file-sync conflict copies, quarantined out of the source tree
 .conflicted-copies-*/
+
+# Local agent and review files
+AGENTS.md
+CLAUDE*.md
+DEPLOY_CONTRACT.md
+PUBLISHING_AUDIT.md
+.claude/
+.codex/
+.env
+.env.*
+!.env.example
+
+# Generated demo and reproduction outputs
+demo/output/
+demo/outputs/
+reproduce/**/output/
+reproduce/**/outputs/
+__pycache__/
+*.pyc
+demo/data/AI_Exports/

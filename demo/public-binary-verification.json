@@ -1,0 +1,23 @@
+{
+  "verified_on": "2026-09-30",
+  "scope": "Numerical check of the published binary through the plugin entry point in a standalone headless JVM. Uses the supplied TIFFs, fixed macro options and validator; excludes Fiji GUI/menu and macro-editor integration.",
+  "binary_url": "https://github.com/Jay2owe/CPC/releases/download/v1.5.0/CPC-1.5.0.jar",
+  "binary_sha256": "b700f867e70a9d8decdc3f7de47fc39eae55063535d18b5d6a24a846d466d902",
+  "java": "openjdk version \"21.0.12\" 2026-07-21 LTS",
+  "elapsed_seconds": 2.84,
+  "validation": "All supplied numerical expected results matched.",
+  "operating_system": "Windows 11",
+  "cpu": "AMD Ryzen 7 7730U",
+  "ram_gb": 32,
+  "imagej_dependency": [
+    "ij-1.53f.jar"
+  ],
+  "dependency_source": "Maven-resolved FLASH test dependencies; no Fiji installation was changed.",
+  "source_sha256": {
+    "data/Demo_A.tif": "53b59a5f26c15b4c6d679c25d48c48b12ae0df5c0b7d8ae280324c6b66c65565",
+    "data/Demo_B.tif": "f3766f85c530fd2aa4615ffb340abad45ace9b88ac6423692fd3f2ad8956f884",
+    "expected_result.json": "c7a87e3a67882eede1156bd864dbead6f2495783be40aeadea19124b29725793",
+    "run_demo.ijm": "29b0c04ccb95b3051515b613215c147c4df5b824e7d16f00323360d1076a02ed",
+    "validate_outputs.py": "deca5a2d3c886a682dcaf7baed2445881f8a0bafd5db1a94777e5dee46969d8b"
+  }
+}

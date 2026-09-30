@@ -24,6 +24,28 @@ An ImageJ/Fiji plugin for object-based colocalization analysis. CPC determines c
 
 ## Installation
 
+### System requirements and typical installation time
+
+CPC requires Fiji/ImageJ and Java 8 or newer. The analysis engines are bundled
+inside the plugin JAR; no separate engine installation or GPU is required.
+A standard laptop or desktop with a four-core processor, 8 GB RAM and an SSD
+is sufficient for the small demo below. Memory requirements for your own data
+depend on image size and the number of channels.
+
+**Typical installation time:** allow **1–5 minutes** to install CPC into an
+existing Fiji installation, including a restart, or **5–15 minutes** if Fiji
+also needs downloading and installing. These are planning estimates for a
+normal computer with a stable broadband connection, rather than measured
+fresh-install benchmarks; download speed and Fiji updates affect the time.
+
+The supplied demo was tested with a locally built CPC **1.5.0** binary,
+Fiji/ImageJ **2.16.0 / 1.54p**
+and Java **11.0.31** on Windows 11. See the [verification receipt](demo/verification.json)
+for the exact test hardware, plugin fingerprint and measured demo runtime.
+The downloadable GitHub 1.5.0 binary also passed a
+[standalone numerical check](demo/public-binary-verification.json) against all
+supplied expected results. That check does not exercise the Fiji graphical interface.
+
 ### Update site (preferred)
 
 In Fiji, open **Help → Update… → Manage update sites**, then enable **Centre-Particle Coincidence (CPC)**. If it is not listed, click **Add Unlisted Site** and use `https://sites.imagej.net/Center-Particle-Coincidence/`.
@@ -36,6 +58,30 @@ In Fiji, open **Help → Update… → Manage update sites**, then enable **Cent
 4. Start Fiji and run **Plugins → CPC**.
 
 To update, repeat the steps and delete the previous JAR from `plugins/` first.
+
+---
+
+## Small simulated demo
+
+The repository includes [two artificial 3D label images and a runnable demo](demo/README.md).
+Each image is 32 × 32 × 5 voxels with four labelled objects; together the TIFFs
+occupy approximately 22 KB. No biological data or additional downloads are needed.
+
+1. Install CPC as above and download or clone this repository, retaining the `demo/` folder.
+2. Open [`demo/run_demo.ijm`](demo/run_demo.ijm) in Fiji's Script Editor and click **Run**.
+3. Choose an empty output folder. The macro loads both images and saves the
+   summary and two per-object CSV tables under `CPC/Objects/`.
+
+**Expected result:** 3 of 4 A-object centres fall inside B objects (**75%**),
+while 1 of 4 B-object centres falls inside A objects (**25%**). This demonstrates
+why the two directions can differ. The [demo guide](demo/README.md) explains all
+expected outputs and provides an optional automatic validator.
+
+**Expected runtime:** less than one minute on a normal laptop or desktop once
+Fiji is running. The demo took **0.7 seconds** on the tested laptop; the measured
+runtime and test environment are recorded in
+[`demo/verification.json`](demo/verification.json). This excludes installation,
+Fiji startup and manual folder selection.
 
 ---
 

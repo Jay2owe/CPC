@@ -1,0 +1,127 @@
+{
+  "dataset": "fully artificial label maps; no biological inference",
+  "summary": {
+    "Demo_A": {
+      "Objects": 4,
+      "vs Objects": 4,
+      "Colocalized": 3,
+      "% Colocalized": 75,
+      "Contains": 1,
+      "% Contains": 25,
+      "Coloc or Contains": 3,
+      "% Coloc or Contains": 75
+    },
+    "Demo_B": {
+      "Objects": 4,
+      "vs Objects": 4,
+      "Colocalized": 1,
+      "% Colocalized": 25,
+      "Contains": 3,
+      "% Contains": 75,
+      "Coloc or Contains": 3,
+      "% Coloc or Contains": 75
+    }
+  },
+  "objects": {
+    "Demo_A": [
+      {
+        "Label": 1,
+        "Volume (voxels)": 147,
+        "Centroid X (px)": 7,
+        "Centroid Y (px)": 7,
+        "Colocalized": 1,
+        "Coloc Partner Label": 1,
+        "Contains": 1,
+        "Contains Count": 1,
+        "Centroid Z (slice)": 2,
+        "Contains Partner Labels": "1"
+      },
+      {
+        "Label": 2,
+        "Volume (voxels)": 27,
+        "Centroid X (px)": 21,
+        "Centroid Y (px)": 6,
+        "Colocalized": 1,
+        "Coloc Partner Label": 2,
+        "Contains": 0,
+        "Contains Count": 0,
+        "Centroid Z (slice)": 2,
+        "Contains Partner Labels": ""
+      },
+      {
+        "Label": 3,
+        "Volume (voxels)": 27,
+        "Centroid X (px)": 5,
+        "Centroid Y (px)": 21,
+        "Colocalized": 1,
+        "Coloc Partner Label": 3,
+        "Contains": 0,
+        "Contains Count": 0,
+        "Centroid Z (slice)": 2,
+        "Contains Partner Labels": ""
+      },
+      {
+        "Label": 4,
+        "Volume (voxels)": 27,
+        "Centroid X (px)": 23,
+        "Centroid Y (px)": 23,
+        "Colocalized": 0,
+        "Coloc Partner Label": 0,
+        "Contains": 0,
+        "Contains Count": 0,
+        "Centroid Z (slice)": 2,
+        "Contains Partner Labels": ""
+      }
+    ],
+    "Demo_B": [
+      {
+        "Label": 1,
+        "Volume (voxels)": 405,
+        "Centroid X (px)": 7,
+        "Centroid Y (px)": 7,
+        "Colocalized": 1,
+        "Coloc Partner Label": 1,
+        "Contains": 1,
+        "Contains Count": 1,
+        "Centroid Z (slice)": 2,
+        "Contains Partner Labels": "1"
+      },
+      {
+        "Label": 2,
+        "Volume (voxels)": 231,
+        "Centroid X (px)": 23,
+        "Centroid Y (px)": 6,
+        "Colocalized": 0,
+        "Coloc Partner Label": 0,
+        "Contains": 1,
+        "Contains Count": 1,
+        "Centroid Z (slice)": 2,
+        "Contains Partner Labels": "2"
+      },
+      {
+        "Label": 3,
+        "Volume (voxels)": 243,
+        "Centroid X (px)": 9,
+        "Centroid Y (px)": 22,
+        "Colocalized": 0,
+        "Coloc Partner Label": 0,
+        "Contains": 1,
+        "Contains Count": 1,
+        "Centroid Z (slice)": 2,
+        "Contains Partner Labels": "3"
+      },
+      {
+        "Label": 4,
+        "Volume (voxels)": 27,
+        "Centroid X (px)": 29,
+        "Centroid Y (px)": 29,
+        "Colocalized": 0,
+        "Coloc Partner Label": 0,
+        "Contains": 0,
+        "Contains Count": 0,
+        "Centroid Z (slice)": 2,
+        "Contains Partner Labels": ""
+      }
+    ]
+  }
+}
